@@ -10,7 +10,6 @@ except ImportError:
     
 from resources import parse_to_dsong    
 
-
 class MusicPlayer(object):        
     down_type = 0
     
@@ -66,4 +65,4 @@ class TTPDownload(object):
     
     def init(self, down_type, dummy_songs):
         print "Don't support"
-        # print MusicPlayer.parse_dummy_songs(dummy_songs)
+        # songs = MusicPlayer.parse_dummy_songs(dummy_songs)

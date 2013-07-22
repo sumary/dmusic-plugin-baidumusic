@@ -4,17 +4,15 @@
 安装
 ----
 
-
 ```bash
+sudo apt-get install cython libwebkitgtk-dev git
 
-sudo apt-get install cython libwebkitgtk-dev 
-
-git clone https://github.com:sumary/pyjavascriptcore.git
+git clone https://github.com/sumary/pyjavascriptcore.git
 cd pyjavascriptcore
 sudo python setup.py install
 
 
-git clone https://github.com:sumary/dmusic-plugin-baidumusic.git
+git clone https://github.com/sumary/dmusic-plugin-baidumusic.git
 cd dmusic-plugin-baidumusic
 cp -r baidumusic ~/.local/share/deepin-music-player/plugins/
 ```
