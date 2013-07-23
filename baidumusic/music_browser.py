@@ -17,7 +17,10 @@ class MusicBrowser(gtk.VBox):
         super(MusicBrowser, self).__init__()
         
         # check network status
-        self.loading_box = LoadingBox("正在加载数据，如果长时间没有响应，点击此处刷新", "此处", self.reload_browser)
+        self.progress_value = 0
+        self.update_progress_flag = True
+        self.prompt_text = "正在加载数据(%d%%)，如果长时间没有响应，点击此处刷新"
+        self.loading_box = LoadingBox(self.prompt_text % self.progress_value, "此处", self.reload_browser)
         self.network_failed_box = NetworkConnectFailed(self.check_network_connection)
         self.check_network_connection(auto=True)
 
@@ -28,18 +31,24 @@ class MusicBrowser(gtk.VBox):
         settings.set_property('enable-plugins', False)
         self.webview.set_settings(settings)
         
-        self.webview.open("http://musicmini.baidu.com/static/recommend/recommend.html")
+        self.webview.load_uri("http://musicmini.baidu.com/static/recommend/recommend.html")
         self.js_context = jscore.JSContext(self.webview.get_main_frame().get_global_context()).globalObject                        
         self.webview.connect("load-finished", self.on_webview_load_finished)
-        # self.webview.connect("load-started", self.on_webview_load_started)
+        self.webview.connect("load-progress-changed", self.on_webview_progress_changed)
         
         self._player = MusicPlayer()
         self._player_interface = PlayerInterface()
         self._ttp_download = TTPDownload()
         self.is_reload_flag = False
         
-    def on_webview_load_started(self, widget, event):    
-        self.injection_object()
+    def on_webview_progress_changed(self, widget, value):    
+        if self.update_progress_flag:
+            if self.is_reload_flag:
+                self.progress_value = (100 + value ) / 200.0
+            else:    
+                self.progress_value = value / 200.0            
+                
+            self.loading_box.update_prompt_text(self.prompt_text % int(self.progress_value * 100))    
         
     def check_network_connection(self, auto=False):    
         if is_network_connected():
@@ -51,6 +60,8 @@ class MusicBrowser(gtk.VBox):
             
     def reload_browser(self):        
         self.is_reload_flag = False
+        self.update_progress_flag = True
+        self.progress_value = 0
         self.webview.reload()
             
     def injection_object(self):
@@ -65,10 +76,13 @@ class MusicBrowser(gtk.VBox):
         js_e.src = "http://musicmini.baidu.com/resources/js/jquery.js"
         self.js_context.document.appendChild(js_e)
         
-    def on_webview_load_finished(self, widget, event):    
+    def on_webview_load_finished(self, *args):    
         if not self.is_reload_flag:
             self.webview.reload()
             self.is_reload_flag = True
-        else:    
-            self.injection_object()
+        elif self.is_reload_flag and self.update_progress_flag:    
+            self.update_progress_flag = False
             switch_tab(self, self.webview)
+            
+        # inject object.    
+        self.injection_object()            
