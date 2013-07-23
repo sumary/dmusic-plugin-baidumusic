@@ -1,7 +1,7 @@
 百度音乐插件(深度音乐播放器)
 ========================
 
-![深度音乐](http://farm8.staticflickr.com/7344/9352976926_eac512f9d2_b.jpg, "百度音乐")
+![深度音乐](http://farm8.static.flickr.com/7344/9352976926_eac512f9d2.jpg, "百度音乐")
 
 
 LinuxDeepin系统安装方法
