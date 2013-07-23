@@ -18,8 +18,14 @@ class MusicBrowser(gtk.VBox):
         
         # check network status
         self.progress_value = 0
+        self.is_reload_flag = False        
         self.update_progress_flag = True
         self.prompt_text = "正在加载数据(%d%%)，如果长时间没有响应，点击此处刷新"
+        
+        self._player = MusicPlayer()
+        self._player_interface = PlayerInterface()
+        self._ttp_download = TTPDownload()
+        
         self.loading_box = LoadingBox(self.prompt_text % self.progress_value, "此处", self.reload_browser)
         self.network_failed_box = NetworkConnectFailed(self.check_network_connection)
         self.check_network_connection(auto=True)
@@ -46,10 +52,6 @@ class MusicBrowser(gtk.VBox):
         # self.webview.connect("resource-request-starting", self.on_webview_resource_request)
         # self.webview.connect("resource-load-finished", self.on_webview_resource_request)
         
-        self._player = MusicPlayer()
-        self._player_interface = PlayerInterface()
-        self._ttp_download = TTPDownload()
-        self.is_reload_flag = False
         
     def on_webview_script_alert(self, widget, frame, message):    
         self.injection_object()
