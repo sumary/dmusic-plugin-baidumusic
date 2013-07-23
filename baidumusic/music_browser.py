@@ -34,13 +34,36 @@ class MusicBrowser(gtk.VBox):
         self.webview.load_uri("http://musicmini.baidu.com/static/recommend/recommend.html")
         self.js_context = jscore.JSContext(self.webview.get_main_frame().get_global_context()).globalObject                        
         self.webview.connect("load-finished", self.on_webview_load_finished)
+
         self.webview.connect("load-progress-changed", self.on_webview_progress_changed)
+        
+        # message status
+        self.webview.connect("script-alert", self.on_webview_script_alert)        
+        self.webview.connect("console-message", self.on_webview_console_message)
+        
+        # resource load
+        self.webview.connect("resource-load-failed", self.on_webview_resource_request)
+        # self.webview.connect("resource-request-starting", self.on_webview_resource_request)
+        # self.webview.connect("resource-load-finished", self.on_webview_resource_request)
         
         self._player = MusicPlayer()
         self._player_interface = PlayerInterface()
         self._ttp_download = TTPDownload()
         self.is_reload_flag = False
         
+    def on_webview_script_alert(self, widget, frame, message):    
+        self.injection_object()
+        self._player.alert(message)
+        
+        # reject alert dialog.
+        return True
+    
+    def on_webview_console_message(self, widget, message, line, source_id):
+        return True
+    
+    def on_webview_resource_request(self, *args):    
+        self.injection_object()
+            
     def on_webview_progress_changed(self, widget, value):    
         if self.update_progress_flag:
             if self.is_reload_flag:
