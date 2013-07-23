@@ -5,7 +5,7 @@ import gtk
 import webkit
 import javascriptcore as jscore
 
-from widget.ui import NetworkConnectFailed, AutoLabel
+from widget.ui import NetworkConnectFailed, LoadingBox
 from deepin_utils.net import is_network_connected
 from widget.ui_utils import switch_tab
 
@@ -17,7 +17,7 @@ class MusicBrowser(gtk.VBox):
         super(MusicBrowser, self).__init__()
         
         # check network status
-        self.prompt_label = AutoLabel("正在加载数据...")        
+        self.loading_box = LoadingBox("正在加载数据，如果长时间没有响应，点击此处刷新", "此处", self.reload_browser)
         self.network_failed_box = NetworkConnectFailed(self.check_network_connection)
         self.check_network_connection(auto=True)
 
@@ -43,12 +43,15 @@ class MusicBrowser(gtk.VBox):
         
     def check_network_connection(self, auto=False):    
         if is_network_connected():
-            switch_tab(self, self.prompt_label)
+            switch_tab(self, self.loading_box)
             if not auto:
-                self.is_reload_flag = False
-                self.webview.reload()
+                self.reload_browser()
         else:    
             switch_tab(self, self.network_failed_box)
+            
+    def reload_browser(self):        
+        self.is_reload_flag = False
+        self.webview.reload()
             
     def injection_object(self):
         self.js_context.player = self._player
