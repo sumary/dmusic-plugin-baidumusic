@@ -19,6 +19,7 @@ class MusicBrowser(gtk.VBox):
         # check network status
         self.progress_value = 0
         self.is_reload_flag = False        
+        self.network_connected_flag = False
         self.update_progress_flag = True
         self.prompt_text = "正在加载数据(%d%%)，如果长时间没有响应，点击此处刷新"
         
@@ -77,10 +78,12 @@ class MusicBrowser(gtk.VBox):
         
     def check_network_connection(self, auto=False):    
         if is_network_connected():
+            self.network_connected_flag = True
             switch_tab(self, self.loading_box)
             if not auto:
                 self.reload_browser()
         else:    
+            self.network_connected_flag = False
             switch_tab(self, self.network_failed_box)
             
     def reload_browser(self):        
@@ -107,7 +110,8 @@ class MusicBrowser(gtk.VBox):
             self.is_reload_flag = True
         elif self.is_reload_flag and self.update_progress_flag:    
             self.update_progress_flag = False
-            switch_tab(self, self.webview)
+            if self.network_connected_flag:
+                switch_tab(self, self.webview)
             
         # inject object.    
         self.injection_object()            
