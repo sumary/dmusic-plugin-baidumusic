@@ -18,7 +18,7 @@ cp -r baidumusic ~/.local/share/deepin-music-player/plugins/
 其它Linux发行版
 ------------------
 
-1. 安装 cython libwebkitgtk-dev python-dev gtk, 例如:
+1. 安装 cython libwebkitgtk-dev python-dev git, 例如:
 ```
 sudo apt-get install cython libwebkitgtk-dev git
 ```
