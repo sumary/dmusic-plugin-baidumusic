@@ -7,6 +7,7 @@ import time
 
 from dtk.ui.treeview import TreeView
 from dtk.ui.threads import post_gui
+from dtk.ui.menu import Menu
 
 from widget.ui_utils import draw_alpha_mask
 from widget.song_item import SongItem
@@ -16,6 +17,7 @@ from resources import request_songinfo
 
 import utils
 from xdg_support import get_config_file
+from nls import _
 from song import Song
 
 class MusicView(TreeView):
@@ -31,6 +33,7 @@ class MusicView(TreeView):
         
         self.connect("double-click-item", self.on_music_view_double_click)
         self.connect("press-return", self.on_music_view_press_return)
+        self.connect("right-press-items", self.on_right_press_items)
         
         event_manager.connect("add-songs", self.on_event_add_songs)
         event_manager.connect("play-songs", self.on_event_play_songs)
@@ -59,6 +62,25 @@ class MusicView(TreeView):
         if items:
             song = items[0].get_song()
             self.request_song(song, play=True)
+            
+    def on_right_press_items(self, widget, x, y, current_item, select_items):
+        if current_item and select_items:
+            if len(select_items) > 1:
+                items = [
+                    (None, _("Delete"), lambda : self.delete_items(select_items)),
+                    (None, _("Clear List"), lambda : self.clear_items())
+                    ]
+            else:    
+                items = [
+                    (None, _("Play"), lambda : self.request_song(current_item.get_song())),
+                    (None, _("Delete"), lambda : self.delete_items([current_item])),
+                    (None, _("Clear List"), lambda : self.clear_items())
+                    ]
+            Menu(items, True).show((int(x), int(y)))   
+               
+    def clear_items(self):        
+        self.clear()
+        self.emit("empty-items")    
             
     def draw_mask(self, cr, x, y, width, height):            
         draw_alpha_mask(cr, x, y, width, height, "layoutMiddle")
