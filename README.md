@@ -41,3 +41,11 @@ cp -r baidumusic ~/.local/share/deepin-music-player/plugins/
 ----
 
 运行深度音乐， 选项设置->附加组件 中启用百度音乐即可
+
+
+贡献者
+-------
+
+* [@lovesnow](https://github.com/lovesnow)
+* [@binyuj](https://github.com/binyuj)
+
