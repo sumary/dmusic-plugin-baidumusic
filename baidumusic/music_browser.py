@@ -8,7 +8,6 @@ import javascriptcore as jscore
 from widget.ui import NetworkConnectFailed, LoadingBox
 from deepin_utils.net import is_network_connected
 from widget.ui_utils import switch_tab
-
 from music_player import MusicPlayer, PlayerInterface, TTPDownload
 
 class MusicBrowser(gtk.VBox):
@@ -41,7 +40,6 @@ class MusicBrowser(gtk.VBox):
         self.webview.load_uri("http://musicmini.baidu.com/static/recommend/recommend.html")
         self.js_context = jscore.JSContext(self.webview.get_main_frame().get_global_context()).globalObject                        
         self.webview.connect("load-finished", self.on_webview_load_finished)
-
         self.webview.connect("load-progress-changed", self.on_webview_progress_changed)
         
         # message status
@@ -93,6 +91,7 @@ class MusicBrowser(gtk.VBox):
         self.webview.reload()
             
     def injection_object(self):
+        self.injection_css()
         self.js_context.player = self._player
         self.js_context.window.top.ttp_download = self._ttp_download
         self.js_context.window.top.playerInterface = self._player_interface
@@ -103,6 +102,12 @@ class MusicBrowser(gtk.VBox):
         js_e = self.js_context.document.createElement("script")
         js_e.src = "http://musicmini.baidu.com/resources/js/jquery.js"
         self.js_context.document.appendChild(js_e)
+        
+    def injection_css(self):    
+        try:
+            main_div = self.js_context.document.getElementById("mainDiv")
+            main_div.style.height = "405px"            
+        except: pass
         
     def on_webview_load_finished(self, *args):    
         if not self.is_reload_flag:
