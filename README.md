@@ -1,6 +1,14 @@
 百度音乐插件(深度音乐播放器)
 ========================
 
+特性
+--------
+* 支持百度账号登录 
+* 可以管理本地试听列表
+* 可以管理在线歌单
+* 支持收藏歌曲并同步
+* 高质量音频(320kbps)
+
 LinuxDeepin系统安装方法
 ----------------------
 1. 安装依赖
@@ -20,7 +28,7 @@ cp -r baidumusic ~/.local/share/deepin-music-player/plugins/
 
 1. 安装 cython libwebkitgtk-dev python-dev git, 例如:
 ```
-sudo apt-get install cython libwebkitgtk-dev git
+sudo apt-get install cython libwebkitgtk-dev python-dev git
 ```
 
 2. 安装pyjavascriptcore
