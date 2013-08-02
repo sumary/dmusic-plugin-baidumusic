@@ -12,15 +12,33 @@ from dtk.ui.menu import Menu
 from widget.ui_utils import draw_alpha_mask
 from widget.song_item import SongItem
 from player import Player
-from events import event_manager
-from resources import request_songinfo
 
 import utils
-from xdg_support import get_config_file
+from xdg_support import get_cache_file
 from nls import _
 from song import Song
 
+from music_player import baidu_music_player as bplayer
+from events import event_manager
+
+class CategoryView(TreeView):
+    
+    def add_items(self, items, insert_pos=None, clear_first=False):
+        for item in items:
+            song_view = getattr(item, "song_view", None)
+            if song_view:
+                setattr(song_view, "category_view", self)
+        TreeView.add_items(self, items, insert_pos, clear_first)        
+        
+    items = property(lambda self: self.visible_items)    
+        
+        
 class MusicView(TreeView):
+    
+    DEFAULT_TYPE = 1
+    LOCAL_TYPE = 2    
+    COLLECT_TYPE = 3
+    PLAYLIST_TYPE = 4
     
     __gsignals__ = {
         "begin-add-items" : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),
@@ -28,26 +46,29 @@ class MusicView(TreeView):
         }
     
     
-    def __init__(self):
+    def __init__(self, view_type, data=None):
         TreeView.__init__(self, enable_drag_drop=False, enable_multiple_select=True)        
         
         self.connect("double-click-item", self.on_music_view_double_click)
         self.connect("press-return", self.on_music_view_press_return)
-        self.connect("right-press-items", self.on_right_press_items)
+        self.connect("right-press-items", self.on_music_view_right_press_items)
+        self.connect("delete-select-items", self.on_music_view_delete_select_items)
         
-        event_manager.connect("add-songs", self.on_event_add_songs)
-        event_manager.connect("play-songs", self.on_event_play_songs)
-        
-        self.db_file = get_config_file("baidumusic.db")
-        self.load()
+        self.db_file = get_cache_file("baidumusic/baidumusic.db")
+        self.view_type = view_type
+        self.view_data = data
         
         self.request_thread_id = 0
+        self.collect_thread_id = 0
+        self.onlinelist_thread_id = 0
+        self.collect_page = 0
         
-    def on_event_add_songs(self, obj, data):    
-        self.add_songs(data)
-        
-    def on_event_play_songs(self, obj, data):
-        self.add_songs(data, play=True)
+        if self.view_type == self.DEFAULT_TYPE:
+            self.load()
+        elif self.view_type == self.COLLECT_TYPE:    
+            self.load_collect_songs()
+        elif self.view_type == self.PLAYLIST_TYPE:    
+            self.load_onlinelist_songs()
         
     @property    
     def items(self):
@@ -63,7 +84,7 @@ class MusicView(TreeView):
             song = items[0].get_song()
             self.request_song(song, play=True)
             
-    def on_right_press_items(self, widget, x, y, current_item, select_items):
+    def on_music_view_right_press_items(self, widget, x, y, current_item, select_items):
         if current_item and select_items:
             if len(select_items) > 1:
                 items = [
@@ -76,7 +97,63 @@ class MusicView(TreeView):
                     (None, _("Delete"), lambda : self.delete_items([current_item])),
                     (None, _("Clear List"), lambda : self.clear_items())
                     ]
+                
+            if self.view_type != self.PLAYLIST_TYPE and bplayer.is_login:
+                sub_menu = self.get_add_online_list_menu(select_items)                    
+                if sub_menu:
+                    items.insert(1, (None, "添加到歌单", sub_menu))
+                    
+                if self.view_type != self.COLLECT_TYPE:    
+                    
+                    collect_items = filter(lambda item: item.list_type == self.COLLECT_TYPE, self.category_view.items)
+                    if len(collect_items) > 0:
+                        
+                        collect_item = collect_items[0]
+                        songs = [ item.song for item in select_items ]
+                        sids = self.get_sids(select_items)
+                        
+                        def add_to_collect(item, songs, sids):
+                            item.add_songs(songs, pos=0)
+                            bplayer.add_collect_song(sids)
+                                                                
+                        items.insert(1, (None, "收藏", add_to_collect, collect_item, songs, sids))
+                        
+                
             Menu(items, True).show((int(x), int(y)))   
+            
+            
+    def get_sids(self, items):        
+        return ",".join([ str(item.song["sid"]) for item in items if item.song.get("sid", None)])
+            
+            
+    def get_add_online_list_menu(self, select_items):        
+        category_items = [item for item in self.category_view.items if item.list_type == self.PLAYLIST_TYPE]
+        if len(category_items) <= 0:
+            return None
+        
+        songs = [ item.song for item in select_items ]
+        sids = self.get_sids(select_items)
+        
+        def add_song_to_list(item, songs, sids):
+            item.add_songs(songs, pos=0)
+            pid = item.list_id
+            bplayer.add_list_song(pid, sids)            
+                    
+        menu_items = [(None, item.title, add_song_to_list, item, songs, sids) for item in category_items ]
+        return Menu(menu_items)
+    
+                
+    def on_music_view_delete_select_items(self, widget, items):        
+        if not items:
+            return
+        
+        sids = self.get_sids(items)
+        
+        if self.view_type == self.COLLECT_TYPE:
+            bplayer.del_collect_song(sids)
+                
+        if self.view_type == self.PLAYLIST_TYPE:        
+            bplayer.del_list_song(self.list_id, sids)
                
     def clear_items(self):        
         self.clear()
@@ -97,7 +174,7 @@ class MusicView(TreeView):
             self.request_thread_id += 1
             thread_id = copy.deepcopy(self.request_thread_id)
             utils.ThreadFetch(
-                fetch_funcs=(request_songinfo, (song,)),
+                fetch_funcs=(bplayer.request_songinfo, (song,)),
                 success_funcs=(self.render_play_song, (play, thread_id))
                 ).start()
         else:    
@@ -167,12 +244,14 @@ class MusicView(TreeView):
             self.add_items(song_items, pos, False)
             
             # save songs
-            self.save()
+            if self.view_type == self.DEFAULT_TYPE:
+                self.save()
+            if self.view_type == self.LOCAL_TYPE:    
+                event_manager.emit("save-listen-lists")
             
         if len(songs) >= 1 and play:
             song = songs[0]
             self.request_song(song, play=True)
-
             
     def set_highlight_song(self, song):        
         if not song: return 
@@ -219,9 +298,12 @@ class MusicView(TreeView):
             highlight_item = self.items[0]
             
         self.request_song(highlight_item.get_song(), play=True)
+        
+    def dump_songs(self):    
+        return [ song.get_dict() for song in self.get_songs() ]
     
     def save(self):
-        objs = [ song.get_dict() for song in self.get_songs() ]
+        objs = self.dump_songs()
         utils.save_db(objs, self.db_file)
         
     def load(self):    
@@ -234,3 +316,69 @@ class MusicView(TreeView):
                 songs.append(s)
         if songs:        
             self.add_songs(songs)
+            
+    def load_collect_songs(self, clear=False):
+        if clear:
+            self.clear()
+            
+        if not bplayer.is_login:
+            return 
+        self.collect_thread_id += 1
+        thread_id = copy.deepcopy(self.collect_thread_id)
+        utils.ThreadFetch(
+            fetch_funcs=(bplayer.get_collect_songs, (self.collect_page,)),
+            success_funcs=(self.render_collect_songs, (thread_id,))
+            ).start()
+            
+    @post_gui    
+    def render_collect_songs(self, data, thread_id):        
+        if self.collect_thread_id != thread_id:
+            return
+        if len(data) == 2:
+            songs, havemore = data        
+            self.add_songs(songs)
+            
+    def load_onlinelist_songs(self, clear=False):
+        if clear:
+            self.clear()
+        
+        if not bplayer.is_login:
+            return 
+        
+        if not self.view_data:
+            return 
+        
+        playlist_id = self.list_id
+                        
+        self.onlinelist_thread_id += 1
+        thread_id = copy.deepcopy(self.onlinelist_thread_id)
+        utils.ThreadFetch(
+            fetch_funcs=(bplayer.get_playlist_songs, (playlist_id,)),
+            success_funcs=(self.render_onlinelist_songs, (thread_id,))
+            ).start()
+        
+    @post_gui    
+    def render_onlinelist_songs(self, songs, thread_id):    
+        if self.onlinelist_thread_id != thread_id:
+            return 
+        
+        if songs:
+            self.add_songs(songs)
+            
+    def refrush(self):        
+        if self.view_type == self.COLLECT_TYPE:    
+            self.load_collect_songs(clear=True)
+        elif self.view_type == self.PLAYLIST_TYPE:    
+            self.load_onlinelist_songs(clear=True)
+            
+    @property        
+    def list_id(self):
+        if self.view_data:
+            try:
+                playlist_id = self.view_data.get("id", "")
+            except:    
+                playlist_id = ""
+        else:    
+            playlist_id = ""
+            
+        return playlist_id    
