@@ -42,7 +42,7 @@ class MusicPlayer(BaseInterface):
         self.uid = ""
         self.flag = 1
         self.level = 1
-        self.is_hq_enabled = 1
+        self.is_hq_enabled = 0
             
     @property
     def ClientInfo(self):
