@@ -110,12 +110,13 @@ class MusicBrowser(gtk.VBox):
         self.is_reload_flag = False        
         self.network_connected_flag = False
         self.network_failed_box = NetworkConnectFailed(self.check_network_connection)
-        self.check_network_connection(auto=True)
+
 
         self.webview = BaseWebView("http://musicmini.baidu.com/static/recommend/recommend.html")
         self.js_context = self.webview.js_context        
         self.webview.injection_css = self.injection_css
-        self.add(self.webview)
+        
+        self.check_network_connection(auto=True)        
         
         self.login_dialog = LoginDialog()
         event_manager.connect("login-dialog-run", self.on_login_dialog_run)
@@ -130,6 +131,7 @@ class MusicBrowser(gtk.VBox):
     def check_network_connection(self, auto=False):    
         if is_network_connected():
             self.network_connected_flag = True
+            switch_tab(self, self.webview)
             if not auto:
                 self.reload_browser()
         else:    
