@@ -80,7 +80,7 @@ class MusicListItem(TreeItem):
         self.separator_height = 4
         self.item_width = CATEGROYLIST_WIDTH
         self.item_height = 26 + self.separator_height if has_separator else 26
-        self.init_icon_pixbuf()
+        self.init_pixbufs()
 
         self.song_view = MusicView(view_type=list_type, data=self.data)
         # self.song_view.connect("begin-add-items", self.on_songview_begin_add_items)
@@ -98,17 +98,28 @@ class MusicListItem(TreeItem):
     def on_songview_empty_items(self, widget):
         pass
         
-    def init_icon_pixbuf(self):        
+    def init_pixbufs(self):        
         if self.list_type == self.DEFAULT_TYPE:
-            self.icon_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image("listen_list.png"))            
-        elif self.list_type == self.LOCAL_TYPE:    
-            self.icon_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image("local_list.png"))            
-        elif self.list_type == self.COLLECT_TYPE:    
-            self.icon_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image("collect_list.png"))
-        else:    
-            self.icon_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image("online_list.png"))
+            normal_image_name = "listen_list.png"
+            press_image_name = "listen_list_press.png"
             
-        self.icon_width = self.icon_pixbuf.get_width()
+        elif self.list_type == self.LOCAL_TYPE:    
+            normal_image_name = "local_list.png"
+            press_image_name = "local_list_press.png"
+            
+        elif self.list_type == self.COLLECT_TYPE:    
+            if bplayer.is_login:
+                normal_image_name = "collect_list.png"
+            else:    
+                normal_image_name = "collect_list_unlogin.png"
+            press_image_name = "collect_list_press.png"    
+        else:    
+            normal_image_name = "online_list.png"
+            press_image_name = "online_list_press.png"
+            
+        self.normal_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image(normal_image_name))
+        self.press_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image(press_image_name))
+        self.icon_width = self.normal_pixbuf.get_width()
         
     def get_height(self):    
         return self.item_height
@@ -148,9 +159,14 @@ class MusicListItem(TreeItem):
         rect.x += self.padding_x    
         rect.width -= self.padding_x * 2
             
-        if self.icon_pixbuf:
-            icon_y = rect.y + (rect.height - self.icon_pixbuf.get_height()) / 2
-            draw_pixbuf(cr, self.icon_pixbuf, rect.x, icon_y)    
+        if self.is_highlight:
+            pixbuf = self.press_pixbuf
+        else:    
+            pixbuf = self.normal_pixbuf
+            
+        if pixbuf:    
+            icon_y = rect.y + (rect.height - self.normal_pixbuf.get_height()) / 2
+            draw_pixbuf(cr, pixbuf, rect.x, icon_y)    
             rect.x += self.icon_width + self.padding_x
             rect.width -= self.icon_width - self.padding_x
             
@@ -205,6 +221,10 @@ class MusicListItem(TreeItem):
         if self.list_type == self.COLLECT_TYPE:
             self.song_view.load_collect_songs(clear=True)
             switch_tab(self.main_box, self.song_view)
+            
+            self.normal_pixbuf = gtk.gdk.pixbuf_new_from_file(get_image("collect_list.png"))
+            self.emit_redraw_request()
+            
             
     def dump_list(self):        
         songs = self.song_view.dump_songs()
