@@ -152,11 +152,13 @@ class MusicView(TreeView):
         if self.view_type == self.COLLECT_TYPE:
             bplayer.del_collect_song(sids)
                 
-        if self.view_type == self.PLAYLIST_TYPE:        
+        elif self.view_type == self.PLAYLIST_TYPE:        
             bplayer.del_list_song(self.list_id, sids)
             
-        if self.view_type == self.DEFAULT_TYPE or self.view_type == self.LOCAL_TYPE:    
+        elif self.view_type == self.DEFAULT_TYPE:
             self.save()    
+        elif self.view_type == self.LOCAL_TYPE:    
+            event_manager.emit("save-listen-lists")
                
     def clear_items(self):        
         self.clear()
