@@ -234,3 +234,5 @@ class MusicListItem(TreeItem):
     add_songs = property(lambda self: self.song_view.add_songs)
     refrush = property(lambda self: self.song_view.refrush)
     list_id = property(lambda self: self.song_view.list_id)
+    current_song = property(lambda self: self.song_view.current_song)
+    play_song = property(lambda self: self.song_view.play_song)

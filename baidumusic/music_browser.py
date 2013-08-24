@@ -5,7 +5,7 @@ import gtk
 import javascriptcore as jscore
 from dtk.ui.browser import WebView
 
-from widget.ui import NetworkConnectFailed, LoadingBox
+from widget.ui import NetworkConnectFailed
 from dtk.ui.dialog import DialogBox, DIALOG_MASK_MULTIPLE_PAGE
 
 from deepin_utils.net import is_network_connected
@@ -18,7 +18,7 @@ from events import event_manager
 
 class BaseWebView(WebView):
     
-    def __init__(self, url, cookie=get_cookie_file()):
+    def __init__(self, url, enable_plugins=False, cookie=get_cookie_file()):
         super(BaseWebView, self).__init__(cookie)
         
         # Init objects
@@ -26,9 +26,15 @@ class BaseWebView(WebView):
         self._player_interface = player_interface
         self._ttp_download = ttp_download
         
+        class External(object):
+            BaiduMusic = self._player
+            BaiduMusic2 = self._player
+            
+        self.external = External()    
+        
         # disable webkit plugins.
         settings = self.get_settings()
-        settings.set_property('enable-plugins', False)
+        settings.set_property('enable-plugins', enable_plugins)
         self.set_settings(settings)
         
         # load uri
@@ -41,12 +47,17 @@ class BaseWebView(WebView):
         self._player.__class__.js_context = self.js_context
         
         # connect signals.
+        self.connect("window-object-cleared", self.on_webview_object_cleared)        
         self.connect("script-alert", self.on_script_alert)        
         self.connect("console-message", self.on_console_message)
         self.connect("resource-load-failed", self.on_resouse_load_failed)
         self.connect("load-progress-changed", self.on_webview_progress_changed)        
         self.connect("load-finished", self.on_webview_load_finished)        
 
+        
+    def on_webview_object_cleared(self, *args):    
+        self.injection_object()
+        return True
         
     def on_script_alert(self, widget, frame, message):    
         self.injection_object()
@@ -66,10 +77,13 @@ class BaseWebView(WebView):
         
     def injection_object(self):
         self.injection_css()
+        self.js_context.window.external = self.external
         self.js_context.player = self._player
+        self.js_context.link_support = True
+        self.js_context.mv_support = True
+        
         self.js_context.window.top.ttp_download = self._ttp_download
         self.js_context.window.top.playerInterface = self._player_interface
-        self.js_context.link_support = True
         self.js_context.alert = self._player.alert
         
     def on_webview_load_finished(self, *args):    
@@ -99,6 +113,29 @@ class LoginDialog(DialogBox):
         
     def draw_view_mask(self, cr, x, y, width, height):            
         draw_alpha_mask(cr, x, y, width, height, "layoutMiddle")
+        
+class MVBrowser(DialogBox):        
+    def __init__(self):
+        DialogBox.__init__(self, "登录", 645, 500, DIALOG_MASK_MULTIPLE_PAGE, 
+                           close_callback=self.hide_all, modal=False,
+                           window_hint=None, skip_taskbar_hint=False,
+                           window_pos=gtk.WIN_POS_CENTER)
+        
+        self.url = "http://musicmini.baidu.com/app/mv/playMV.html"
+        self.webview = BaseWebView("", enable_plugins=True)
+        webview_align = gtk.Alignment()
+        webview_align.set(1, 1, 1, 1)
+        webview_align.set_padding(0, 0, 0, 2)
+        webview_align.add(self.webview)
+        self.body_box.pack_start(webview_align, False, True)
+        
+    def draw_view_mask(self, cr, x, y, width, height):            
+        draw_alpha_mask(cr, x, y, width, height, "layoutMiddle")
+        
+    def play_mv(self):    
+        self.webview.load_uri(self.url)
+        self.show_window()
+    
 
 class MusicBrowser(gtk.VBox):
     
@@ -119,8 +156,14 @@ class MusicBrowser(gtk.VBox):
         self.check_network_connection(auto=True)        
         
         self.login_dialog = LoginDialog()
+        self.mv_window = MVBrowser()
+        
         event_manager.connect("login-dialog-run", self.on_login_dialog_run)
         event_manager.connect("login-success", self.on_login_success)
+        event_manager.connect("play-mv", self.on_play_mv)
+        
+    def on_play_mv(self, obj, data):    
+        self.mv_window.play_mv()
         
     def on_login_dialog_run(self, obj, data):    
         self.login_dialog.show_window()

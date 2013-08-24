@@ -4,11 +4,11 @@
 import gtk
 import copy
 
-from dtk.ui.treeview import TreeView
 from dtk.ui.paned import HPaned
 from dtk.ui.threads import post_gui
 from dtk.ui.menu import Menu
 from dtk.ui.dialog import InputDialog, ConfirmDialog
+from deepin_utils.net import is_network_connected
 
 
 import utils
@@ -17,6 +17,7 @@ from constant import CATEGROYLIST_WIDTH, HIDE_PLAYLIST_WIDTH
 from widget.ui_utils import (draw_alpha_mask, switch_tab, draw_line)
 from xdg_support import get_cache_file
 from song import Song
+from player import Player
 
 from events import event_manager
 from music_list_item import MusicListItem, bplayer
@@ -37,6 +38,7 @@ class MusicPlaylist(gtk.VBox):
         super(MusicPlaylist, self).__init__()
         
         self.listen_db_file = get_cache_file("baidumusic/local_listen.db")
+        self.status_db_file = get_cache_file("baidumusic/status.db")
         
         # Init default items        
         self.default_list_item = MusicListItem("试听列表", 
@@ -81,6 +83,7 @@ class MusicPlaylist(gtk.VBox):
         event_manager.connect("add-songs", self.on_event_add_songs)
         event_manager.connect("play-songs", self.on_event_play_songs)
         event_manager.connect("save-listen-lists", self.on_event_save_listen_lists)
+        event_manager.connect("save-playlist-status", self.save_status)
         
         # load playlists.
         self.online_thread_id = 0
@@ -88,13 +91,52 @@ class MusicPlaylist(gtk.VBox):
         
         self.load()
         self.load_online_lists()
+        self.load_status()
         
         self.add(main_paned)
         
     # access category_list highlight_item.    
     current_item = property(lambda self: self.category_list.highlight_item)    
     items = property(lambda self: self.category_list.visible_items)
-        
+    
+    
+    def load_status(self):
+        obj = utils.load_db(self.status_db_file)
+        if obj:
+            index, d = obj
+            song = Song()
+            song.init_from_dict(d, cmp_key="sid")
+        else:    
+            index = 0
+            song = None
+            
+        self.playlist_index = index
+        self.last_song = song
+    
+    def save_status(self, *args):
+        index = 0
+        player_source = Player.get_source()
+        for i, item in enumerate(self.category_list.get_items()):
+            if item.song_view == player_source:
+                index = i
+                
+        try:        
+            song = self.current_item.current_song        
+            utils.save_db((index, song.get_dict()), self.status_db_file)        
+        except:    
+            pass
+    
+    def restore_status(self):
+        try:
+            target_item = self.items[self.playlist_index]
+        except:    
+            target_item = None
+            
+        if target_item:    
+            self.switch_view(target_item)
+            if is_network_connected():
+                self.current_item.play_song(self.last_song, play=True)
+                    
     def draw_category_list_mask(self, cr, x, y, width, height):
         draw_alpha_mask(cr, x, y, width, height, "layoutLeft")
         

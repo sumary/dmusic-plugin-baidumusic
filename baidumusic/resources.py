@@ -177,3 +177,10 @@ class BaseInterface(object):
     def del_list(self, list_id):
         return self.restserver_request("baidu.ting.diy.delList",
                                        listId=list_id)
+    
+    def get_mv(self, song_id):
+        url = "http://musicmini.baidu.com/app/mv/getMV.php"
+        data = dict(songid=song_id)
+        ret = public_curl.request(url, data)
+        return parser_json(ret)
+    

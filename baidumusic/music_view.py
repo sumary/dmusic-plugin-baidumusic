@@ -157,6 +157,7 @@ class MusicView(TreeView):
             
         elif self.view_type == self.DEFAULT_TYPE:
             self.save()    
+            
         elif self.view_type == self.LOCAL_TYPE:    
             event_manager.emit("save-listen-lists")
                
@@ -170,6 +171,7 @@ class MusicView(TreeView):
     def set_current_source(self):        
         if Player.get_source() != self:
             Player.set_source(self)
+
             
     def emit_add_signal(self):
         self.emit("begin-add-items")
@@ -217,6 +219,7 @@ class MusicView(TreeView):
             # set self as current global playlist
             self.set_current_source()
             
+            event_manager.emit("save-playlist-status")
         return song    
     
     @post_gui
@@ -387,3 +390,10 @@ class MusicView(TreeView):
             playlist_id = ""
             
         return playlist_id    
+
+    
+    @property
+    def current_song(self):
+        if self.highlight_item:
+            return self.highlight_item.get_song()
+        return None

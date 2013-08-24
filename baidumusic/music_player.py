@@ -10,6 +10,7 @@ except ImportError:
     
 from resources import parse_to_dsong, BaseInterface
 from xdg_support import get_cache_file
+# from helper import Dispatcher
 
 import utils
 
@@ -23,6 +24,17 @@ class jsobject_to_python(object):
             pyobject = json.loads(obj.js_context.JSON.stringify(jsobject))
             return self.func(obj, pyobject)
         return wrapper
+    
+class jsobject_to_json(object):
+    
+    def __init__(self, func):
+        self.func = func
+        
+    def __get__(self, obj, cls):    
+        def wrapper(jsobject):
+            jsonobj = obj.js_context.JSON.stringify(jsobject)
+            return self.func(obj, jsonobj)
+        return wrapper
 
 class MusicPlayer(BaseInterface):        
     
@@ -32,8 +44,9 @@ class MusicPlayer(BaseInterface):
                         
         self.initial_data()
         self.config_db = get_cache_file("baidumusic/conf.db")
-        self.client_version = "8.0.0.5"
+        self.client_version = "8.1.0.8"
         self.is_cloud = 1
+        self.mv_songs = None
         self.load()
         
     def initial_data(self):    
@@ -68,6 +81,14 @@ class MusicPlayer(BaseInterface):
         songs = self.parse_dummy_songs(dummy_songs)
         if songs:
             event_manager.emit("collect-songs", songs)
+            
+    def GetSongInfos(self):          
+        return self.mv_songs
+        
+    @jsobject_to_json
+    def PlayMVs(self, e):
+        self.mv_songs = e
+        # event_manager.emit("play-mv")
     
     @jsobject_to_python
     def DownloadSongs(self, args):    
@@ -137,6 +158,7 @@ class TTPDownload(object):
     def init(self, down_type, dummy_songs):
         print "Don't support"
         # songs = MusicPlayer.parse_dummy_songs(dummy_songs)
+        # Dispatcher.emit("download-songs", songs)
 
 baidu_music_player = MusicPlayer()        
 player_interface = PlayerInterface()
