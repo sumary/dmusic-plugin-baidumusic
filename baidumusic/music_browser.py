@@ -85,6 +85,20 @@ class BaseWebView(WebView):
         self.js_context.window.top.ttp_download = self._ttp_download
         self.js_context.window.top.playerInterface = self._player_interface
         self.js_context.alert = self._player.alert
+        try:        
+            self.injection_frame_object()
+        except:    
+            pass
+        
+    def injection_frame_object(self):
+        self.js_context.window.frames['centerFrame'].window.external = self.external
+        self.js_context.window.frames['centerFrame'].player = self._player
+        self.js_context.window.frames['centerFrame'].link_support = True
+        self.js_context.window.frames['centerFrame'].mv_support = True
+        self.js_context.window.frames['centerFrame'].window.top.playerInterface = self._player_interface
+        self.js_context.window.frames['centerFrame'].alert = self._player.alert
+        self.js_context.window.frames['centerFrame'].mv_support = True
+        self.js_context.window.frames['centerFrame'].window.top.ttp_download = self._ttp_download
         
     def on_webview_load_finished(self, *args):    
         # inject object.    
@@ -149,7 +163,7 @@ class MusicBrowser(gtk.VBox):
         self.network_failed_box = NetworkConnectFailed(self.check_network_connection)
 
 
-        self.webview = BaseWebView("http://musicmini.baidu.com/static/recommend/recommend.html")
+        self.webview = BaseWebView("http://musicmini.baidu.com/")
         self.js_context = self.webview.js_context        
         self.webview.injection_css = self.injection_css
         
@@ -189,6 +203,6 @@ class MusicBrowser(gtk.VBox):
         
     def injection_css(self):    
         try:
-            main_div = self.js_context.document.getElementById("mainDiv")
-            main_div.style.height = "405px"            
+            self.js_context.window.frames['centerFrame'].document.querySelector('#mainDiv').style.height = "405px"
+            self.js_context.document.getElementById("mainDiv").style.height = "405px"
         except: pass
