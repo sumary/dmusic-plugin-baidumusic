@@ -44,7 +44,7 @@ class MusicPlayer(BaseInterface):
                         
         self.initial_data()
         self.config_db = get_cache_file("baidumusic/conf.db")
-        self.client_version = "8.1.0.8"
+        self.client_version = "8.2.0.9"
         self.is_cloud = 1
         self.mv_songs = None
         self.load()
@@ -91,6 +91,10 @@ class MusicPlayer(BaseInterface):
         # event_manager.emit("play-mv")
     
     @jsobject_to_python
+    def PlayRadios(self, e):    
+        print e
+    
+    @jsobject_to_python
     def DownloadSongs(self, args):    
         print args
         
@@ -124,6 +128,7 @@ class MusicPlayer(BaseInterface):
         print "login_type: ", login_type, act
         
     def SetLoginStatus(self, bduss, username, uid, flag, level):    
+        print "login_type"
         self.bduss = bduss
         self.username = username
         self.uid = uid
@@ -132,6 +137,18 @@ class MusicPlayer(BaseInterface):
         if self.bduss:
             event_manager.emit("login-success")
         self.save()    
+        
+    @jsobject_to_python
+    def SetLoginStatus2(self, infos):    
+        self.bduss = infos.get("bduss", "")
+        self.uid = str(infos.get("user_id", ""))
+        self.username = infos.get("user_name", "")
+        self.flag = infos.get("auto_login", 1)
+        self.level = infos.get("vip_level", 0)
+        if self.bduss:
+            event_manager.emit("login-success")
+        self.save()    
+        
             
     def load(self):        
         obj = utils.load_db(self.config_db)

@@ -184,3 +184,8 @@ class BaseInterface(object):
         ret = public_curl.request(url, data)
         return parser_json(ret)
     
+    
+    def get_bduss(self):
+        url = "http://musicmini.baidu.com/app/passport/getBDUSS.php"
+        return public_curl.request(url)
+        

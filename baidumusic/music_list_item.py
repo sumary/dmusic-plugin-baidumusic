@@ -57,6 +57,7 @@ class MusicListItem(TreeItem):
     LOCAL_TYPE = 2    
     COLLECT_TYPE = 3
     PLAYLIST_TYPE = 4
+    RADIO_TYPE = 5
     
     def __init__(self, data_or_title, list_type, has_separator=False):
         TreeItem.__init__(self)

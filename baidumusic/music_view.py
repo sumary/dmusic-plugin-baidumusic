@@ -39,6 +39,7 @@ class MusicView(TreeView):
     LOCAL_TYPE = 2    
     COLLECT_TYPE = 3
     PLAYLIST_TYPE = 4
+    RADIO_TYPE = 5
     
     __gsignals__ = {
         "begin-add-items" : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ()),

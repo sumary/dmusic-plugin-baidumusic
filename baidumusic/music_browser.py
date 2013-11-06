@@ -29,6 +29,8 @@ class BaseWebView(WebView):
         class External(object):
             BaiduMusic = self._player
             BaiduMusic2 = self._player
+            BaiduMusic3 = self._player
+            BaiduMusic4 = self._player
             
         self.external = External()    
         
@@ -81,6 +83,7 @@ class BaseWebView(WebView):
         self.js_context.player = self._player
         self.js_context.link_support = True
         self.js_context.mv_support = True
+        self.js_context.pop_support = True
         
         self.js_context.window.top.ttp_download = self._ttp_download
         self.js_context.window.top.playerInterface = self._player_interface
@@ -95,9 +98,9 @@ class BaseWebView(WebView):
         self.js_context.window.frames['centerFrame'].player = self._player
         self.js_context.window.frames['centerFrame'].link_support = True
         self.js_context.window.frames['centerFrame'].mv_support = True
+        self.js_context.window.frames['centerFrame'].pop_support = True
         self.js_context.window.frames['centerFrame'].window.top.playerInterface = self._player_interface
         self.js_context.window.frames['centerFrame'].alert = self._player.alert
-        self.js_context.window.frames['centerFrame'].mv_support = True
         self.js_context.window.frames['centerFrame'].window.top.ttp_download = self._ttp_download
         
     def on_webview_load_finished(self, *args):    
