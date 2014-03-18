@@ -5,6 +5,8 @@ import time
 from netlib import Curl
 from utils import parser_json, threaded
 from song import Song
+import base64
+import json
 
 TAGS_MUSIC_KEYS = {
     "song_id" : "sid",
@@ -81,7 +83,7 @@ class BaseInterface(object):
     @property
     def common_kwargs(self):
         return {"format" : "json", "from" : "bmpc",
-                "clientver" : "1.0.0",
+                "clientVer" : "8.3.4.5",
                 "bduss" : self.bduss}
 
     def request_songinfo(self, song):
@@ -95,7 +97,8 @@ class BaseInterface(object):
                     isCloud=self.is_cloud,
                     isHq=self.is_hq_enabled
                     )
-        ret = public_curl.request(url, data)
+        params = {'param' : base64.b64encode(json.dumps(data))}
+        ret = public_curl.request(url, params, method="POST")
         pret = parser_json(ret)
         if len(pret) > 0:
             return parse_to_dsong(pret[0], song)
