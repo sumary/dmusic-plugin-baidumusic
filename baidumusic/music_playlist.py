@@ -161,6 +161,7 @@ class MusicPlaylist(gtk.VBox):
                 menu_items = [
                     (None, "刷新", item.refrush),
                     (None, "新建歌单", self.new_online_list),
+                    (None, "更换帐号", lambda: bplayer.relogin())
                     ]
             else:    
                 menu_items = None
